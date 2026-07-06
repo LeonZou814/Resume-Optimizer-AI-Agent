@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简历优化 Agent</title>
+    <style>
+        /* ── Reset & Variables ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --primary-light: #EEF2FF;
+            --primary-bg: #E0E7FF;
+            --success: #059669;
+            --success-light: #D1FAE5;
+            --danger: #DC2626;
+            --danger-light: #FEE2E2;
+            --warning: #D97706;
+            --warning-light: #FEF3C7;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-400: #9CA3AF;
+            --gray-500: #6B7280;
+            --gray-600: #4B5563;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+            --gray-900: #111827;
+            --radius: 10px;
+            --radius-sm: 6px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.04);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+            color: white;
+            padding: 28px 0 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 60%);
+        }
+        .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.3px; position: relative; }
+        .header p { font-size: 14px; opacity: 0.8; margin-top: 4px; position: relative; }
+
+        /* ── Layout ── */
+        .container { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; }
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--gray-100);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title .icon { font-size: 18px; }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--gray-100);
+            border-radius: var(--radius);
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .tab:hover { color: var(--gray-700); background: rgba(255,255,255,0.5); }
+        .tab.active { background: white; color: var(--primary); box-shadow: var(--shadow); }
+        .tab-desc {
+            font-size: 13px;
+            color: var(--gray-400);
+            margin-bottom: 16px;
+            padding: 0 2px;
+        }
+
+        /* ── Form ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: 5px;
+        }
+        .form-input, .form-select {
+            padding: 9px 12px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            color: var(--gray-800);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+            width: 100%;
+            background: white;
+        }
+        .form-input:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .form-input::placeholder { color: var(--gray-400); }
+
+        /* ── Upload ── */
+        .upload-area {
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--radius);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+        .upload-area.has-file {
+            border-color: var(--success);
+            border-style: solid;
+            background: var(--success-light);
+        }
+        .upload-icon { font-size: 32px; margin-bottom: 6px; }
+        .upload-text { font-size: 14px; color: var(--gray-600); }
+        .upload-hint { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+        .upload-filename { font-size: 14px; color: var(--success); font-weight: 600; }
+        .upload-area input[type="file"] {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-primary:disabled { background: var(--gray-300); cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #047857; }
+        .btn-outline {
+            background: white;
+            color: var(--primary);
+            border: 1.5px solid var(--primary);
+            padding: 5px 12px;
+            font-size: 13px;
+        }
+        .btn-outline:hover { background: var(--primary-light); }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-group .btn { flex: 1; justify-content: center; }
+
+        /* ── Progress ── */
+        .progress-section { display: none; }
+        .progress-section.visible { display: block; }
+        .progress-bar-wrap {
+            height: 4px;
+            background: var(--gray-200);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #7C3AED);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-bar.running {
+            animation: progress-pulse 2s ease-in-out infinite;
+        }
+        @keyframes progress-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.pending { background: var(--warning-light); color: var(--warning); }
+        .status-badge.running { background: var(--primary-bg); color: var(--primary); }
+        .status-badge.completed { background: var(--success-light); color: var(--success); }
+        .status-badge.failed { background: var(--danger-light); color: var(--danger); }
+
+        /* ── Status Info Panel ── */
+        .status-panel {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+        .status-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        .status-item .label {
+            color: var(--gray-500);
+            font-weight: 500;
+        }
+        .status-item .value {
+            color: var(--gray-800);
+            font-weight: 600;
+        }
+        .status-item .value.accent { color: var(--primary); }
+        .status-item .value.warning { color: var(--warning); }
+        .status-item .value.danger { color: var(--danger); }
+
+        .step-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .step-dots {
+            display: flex;
+            gap: 4px;
+        }
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gray-200);
+            transition: background 0.3s;
+        }
+        .step-dot.done { background: var(--success); }
+        .step-dot.active { background: var(--primary); animation: dot-pulse 1.5s ease-in-out infinite; }
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.6; }
+        }
+        .step-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        .phase-desc {
+            font-size: 13px;
+            color: var(--gray-600);
+            padding: 6px 0;
+            border-top: 1px solid var(--gray-200);
+            margin-top: 10px;
+        }
+        .phase-desc .tool-tag {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 1px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .stall-warning {
+            display: none;
+            background: var(--warning-light);
+            border: 1px solid #F59E0B;
+            color: #92400E;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            margin-top: 10px;
+            align-items: center;
+            gap: 6px;
+        }
+        .stall-warning.visible { display: flex; }
+
+        /* ── Log Viewer ── */
+        .log-viewer {
+            background: var(--gray-900);
+            color: #D1D5DB;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
+            font-size: 12.5px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.7;
+        }
+        .log-line { white-space: pre-wrap; word-break: break-all; }
+        .log-line.info { color: #93C5FD; }
+        .log-line.success { color: #6EE7B7; }
+        .log-line.warning { color: #FCD34D; }
+        .log-line.error { color: #FCA5A5; }
+        .log-line.tool-call { color: #C4B5FD; }
+        .log-line.tool-result { color: #6EE7B7; }
+
+        /* ── Results ── */
+        .result-section { display: none; }
+        .result-section.visible { display: block; }
+        .result-files { display: flex; flex-direction: column; gap: 8px; }
+        .result-file {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--gray-50);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+        }
+        .result-file-name { font-size: 14px; color: var(--gray-700); font-weight: 500; }
+        .summary-card {
+            background: var(--primary-light);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-top: 14px;
+            border: 1px solid var(--primary-bg);
+        }
+        .summary-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 10px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .summary-item { font-size: 13px; }
+        .summary-label { color: var(--gray-500); }
+        .summary-value { font-weight: 600; color: var(--gray-800); }
+        .skill-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .skill-tag {
+            padding: 2px 9px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .skill-tag.matched { background: var(--success-light); color: var(--success); }
+        .skill-tag.missing { background: var(--danger-light); color: var(--danger); }
+
+        /* ── Chat ── */
+        .chat-section { display: none; }
+        .chat-section.visible { display: block; }
+        .chat-messages {
+            max-height: 420px;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 14px;
+            min-height: 180px;
+        }
+        .chat-msg { margin-bottom: 14px; display: flex; gap: 10px; }
+        .chat-msg.user { flex-direction: row-reverse; }
+        .chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .chat-msg.user .chat-avatar { background: var(--primary); color: white; }
+        .chat-msg.assistant .chat-avatar { background: var(--gray-200); color: var(--gray-600); }
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .chat-msg.user .chat-bubble {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.assistant .chat-bubble {
+            background: white;
+            color: var(--gray-800);
+            border: 1px solid var(--gray-200);
+            border-bottom-left-radius: 4px;
+        }
+        /* 思考步骤消息 */
+        .chat-msg.step {
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+        .chat-msg.step .step-bubble {
+            background: var(--gray-100);
+            color: var(--gray-500);
+            font-size: 12px;
+            padding: 4px 14px;
+            border-radius: 12px;
+            max-width: 85%;
+            text-align: center;
+            line-height: 1.5;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 22px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .chat-send {
+            padding: 10px 22px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 22px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .chat-send:hover { background: var(--primary-hover); }
+        .chat-send:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+        /* ── Error ── */
+        .error-msg {
+            background: var(--danger-light);
+            color: var(--danger);
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+        .error-msg.visible { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: 1fr; }
+            .container { padding: 16px 12px 40px; }
+            .card { padding: 18px; }
+            .tabs { flex-direction: column; }
+        }
+
+        /* ── Scrollbar ── */
+        .log-viewer::-webkit-scrollbar, .chat-messages::-webkit-scrollbar { width: 5px; }
+        .log-viewer::-webkit-scrollbar-track, .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .log-viewer::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 3px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+        /* ── Animations ── */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .card { animation: fadeIn 0.3s ease; }
+        .fade-in { animation: fadeIn 0.3s ease; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Resume Optimizer Agent</h1>
+    <p>AI 驱动的简历智能优化系统</p>
+</div>
+
+<div class="container">
+    <!-- ── Mode Tabs ── -->
+    <div class="tabs">
+        <button class="tab active" data-mode="pipeline" onclick="switchMode('pipeline')">Pipeline 模式</button>
+        <button class="tab" data-mode="agent" onclick="switchMode('agent')">Agent 模式</button>
+        <button class="tab" data-mode="interactive" onclick="switchMode('interactive')">交互式 Agent</button>
+        <button class="tab" data-mode="focus" onclick="switchMode('focus')">Focus 模式</button>
+    </div>
+    <div class="tab-desc" id="modeDesc">固定流水线：解析简历 → 搜索职位 → 匹配分析 → LLM 优化 → 生成文件</div>
+
+    <!-- ── Resume Upload ── -->
+    <div class="card">
+        <div class="card-title"><span class="icon">📄</span> 简历文件</div>
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📎</div>
+            <div class="upload-text" id="uploadText">点击或拖拽上传简历文件</div>
+            <div class="upload-hint">支持 PDF、DOCX、TXT 格式</div>
+            <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.doc">
+        </div>
+        <div class="error-msg" id="uploadError"></div>
+    </div>
+
+    <!-- ── Config Panel ── -->
+    <div class="card" id="configCard">
+        <div class="card-title"><span class="icon">⚙️</span> 配置参数</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">目标职位</label>
+                <input type="text" class="form-input" id="keyword" placeholder="如：Python后端、产品经理">
+            </div>
+            <div class="form-group">
+                <label class="form-label">工作地点</label>
+                <input type="text" class="form-input" id="location" placeholder="如：北京、上海">
+            </div>
+            <div class="form-group">
+                <label class="form-label">最低薪资（元/月）</label>
+                <input type="number" class="form-input" id="minSalary" placeholder="0 表示不限" min="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">行业筛选</label>
+                <input type="text" class="form-input" id="industry" placeholder="如：互联网、金融">
+            </div>
+            <div class="form-group">
+                <label class="form-label">数据来源</label>
+                <select class="form-select" id="source">
+                    <option value="zhaopin">智联招聘</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">输出格式</label>
+                <select class="form-select" id="format">
+                    <option value="docx">DOCX（Word）</option>
+                    <option value="markdown">Markdown</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">抓取职位数量</label>
+                <input type="number" class="form-input" id="maxJobs" placeholder="默认 10" min="1" max="20" value="10">
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="runBtn" onclick="startTask()" disabled>
+                <span id="runBtnText">▶ 开始优化</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Focus Mode Config ── -->
+    <div class="card" id="focusConfigCard" style="display:none">
+        <div class="card-title"><span class="icon">🎯</span> Focus 模式配置</div>
+        <div class="form-grid">
+            <div class="form-group full">
+                <label class="form-label">职位页面 URL（每行一个，或用逗号分隔）</label>
+                <textarea class="form-input" id="focusUrls" rows="5" placeholder="粘贴职位详情页的 URL，例如：&#10;https://www.zhaopin.com/xxx&#10;https://www.zhipin.com/yyy&#10;https://www.lagou.com/zzz" style="resize:vertical;font-family:monospace;font-size:13px;line-height:1.6"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">执行方式</label>
+                <select class="form-select" id="focusSubMode">
+                    <option value="focus">单次执行（自动完成全部流程）</option>
+                    <option value="focus-interactive">交互式（与 Agent 对话逐步优化）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">输出格式</label>
+                <select class="form-select" id="focusFormat">
+                    <option value="docx">DOCX（Word）</option>
+                    <option value="markdown">Markdown</option>
+                </select>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="focusRunBtn" onclick="startFocusTask()" disabled>
+                <span id="focusRunBtnText">▶ 开始优化</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Progress ── -->
+    <div class="card progress-section" id="progressCard">
+        <div class="card-title">
+            <span class="icon">⏳</span> 执行进度
+            <span class="status-badge pending" id="statusBadge" style="margin-left:auto">等待中</span>
+        </div>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <!-- 状态信息面板 -->
+        <div class="status-panel" id="statusPanel" style="display:none">
+            <div class="step-progress" id="stepProgress" style="display:none">
+                <div class="step-dots" id="stepDots"></div>
+                <span class="step-text" id="stepText"></span>
+            </div>
+            <div class="status-row">
+                <div class="status-item">
+                    <span class="label">当前阶段：</span>
+                    <span class="value accent" id="phaseText">-</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">已运行：</span>
+                    <span class="value" id="elapsedTime">0s</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">最后活动：</span>
+                    <span class="value" id="lastActivityTime">-</span>
+                </div>
+            </div>
+            <div class="phase-desc" id="phaseDesc" style="display:none"></div>
+            <div class="stall-warning" id="stallWarning">
+                <span>⚠️</span>
+                <span id="stallText">超过 30 秒无新活动，可能正在处理耗时操作（如模型加载、LLM 推理）...</span>
+            </div>
+        </div>
+
+        <div class="log-viewer" id="logViewer"></div>
+    </div>
+
+    <!-- ── Results ── -->
+    <div class="card result-section" id="resultCard">
+        <div class="card-title"><span class="icon">✅</span> 优化结果</div>
+        <div class="result-files" id="resultFiles"></div>
+        <div class="summary-card" id="summaryCard" style="display:none">
+            <div class="summary-title">职位匹配分析</div>
+            <div id="summaryContent"></div>
+        </div>
+    </div>
+
+    <!-- ── Chat (Interactive Mode) ── -->
+    <div class="card chat-section" id="chatCard">
+        <div class="card-title"><span class="icon">💬</span> 对话窗口</div>
+        <div class="chat-messages" id="chatMessages">
+            <div style="text-align:center;color:var(--gray-400);padding:40px 0;font-size:14px;">
+                上传简历并发送消息开始对话
+            </div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" class="chat-input" id="chatInput" placeholder="输入消息..." onkeypress="if(event.key==='Enter')sendChat()">
+            <button class="chat-send" id="chatSendBtn" onclick="sendChat()">发送</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════════════════ */
+const state = {
+    mode: 'pipeline',
+    resumePath: '',
+    uploadedFile: '',
+    taskId: null,
+    pollTimer: null,
+    chatTaskId: null,
+    // 步骤追踪
+    startedAt: 0,
+    lastActivity: 0,
+    currentStep: 0,
+    maxSteps: 0,
+    elapsedTimer: null,
+    lastLogCount: 0,
+    renderedChatCount: 0,  // 已渲染的 chat_history 条数（用于轮询时增量渲染 step 消息）
+};
+
+const MODE_DESCS = {
+    pipeline: '固定流水线：解析简历 → 搜索职位 → 匹配分析 → LLM 优化 → 生成文件',
+    agent: 'AI Agent 自主规划执行：智能决策调用工具的顺序和次数',
+    interactive: '多轮对话模式：与 AI Agent 持续交互，逐步优化简历',
+    focus: 'Focus 模式：提供目标职位 URL，针对性优化简历（支持单次和交互式）',
+};
+
+/* ═══════════════════════════════════════════════════════
+   Tab Switching
+   ═══════════════════════════════════════════════════════ */
+function switchMode(mode) {
+    state.mode = mode;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    document.getElementById('modeDesc').textContent = MODE_DESCS[mode];
+
+    const isInteractive = mode === 'interactive';
+    const isFocus = mode === 'focus';
+    const isNormal = !isInteractive && !isFocus;
+
+    document.getElementById('configCard').style.display = isNormal ? '' : 'none';
+    document.getElementById('focusConfigCard').style.display = isFocus ? '' : 'none';
+    document.getElementById('chatCard').classList.toggle('visible', isInteractive || isFocus && document.getElementById('focusSubMode').value === 'focus-interactive');
+
+    if (isNormal) {
+        document.getElementById('runBtn').disabled = !state.resumePath;
+    } else if (isFocus) {
+        document.getElementById('focusRunBtn').disabled = !state.resumePath;
+    } else {
+        document.getElementById('runBtn').disabled = !state.resumePath;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   File Upload
+   ═══════════════════════════════════════════════════════ */
+const uploadArea = document.getElementById('uploadArea');
+const fileInput  = document.getElementById('fileInput');
+
+['dragenter', 'dragover'].forEach(e => uploadArea.addEventListener(e, ev => {
+    ev.preventDefault(); uploadArea.classList.add('dragover');
+}));
+['dragleave', 'drop'].forEach(e => uploadArea.addEventListener(e, ev => {
+    ev.preventDefault(); uploadArea.classList.remove('dragover');
+}));
+uploadArea.addEventListener('drop', ev => {
+    const files = ev.dataTransfer.files;
+    if (files.length) handleFile(files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+async function handleFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['pdf', 'docx', 'txt', 'doc'].includes(ext)) {
+        showUploadError('不支持的文件格式，请上传 PDF、DOCX 或 TXT 文件');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        showUploadError('文件大小不能超过 10MB');
+        return;
+    }
+
+    document.getElementById('uploadText').innerHTML = '<span class="upload-filename">⏳ 上传中...</span>';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('上传失败');
+        const data = await res.json();
+
+        state.resumePath = data.path;
+        state.uploadedFile = data.filename;
+
+        uploadArea.classList.add('has-file');
+        document.getElementById('uploadText').innerHTML =
+            `<span class="upload-filename">✓ ${esc(data.filename)}</span>`;
+        document.getElementById('uploadError').classList.remove('visible');
+        document.getElementById('runBtn').disabled = false;
+        document.getElementById('focusRunBtn').disabled = false;
+    } catch (err) {
+        showUploadError('上传失败: ' + err.message);
+    }
+}
+
+function showUploadError(msg) {
+    const el = document.getElementById('uploadError');
+    el.textContent = msg;
+    el.classList.add('visible');
+    document.getElementById('uploadText').textContent = '点击或拖拽上传简历文件';
+    uploadArea.classList.remove('has-file');
+}
+
+/* ═══════════════════════════════════════════════════════
+   Start Task (Pipeline / Agent)
+   ═══════════════════════════════════════════════════════ */
+async function startTask() {
+    if (!state.resumePath) return;
+
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    document.getElementById('runBtnText').textContent = '⏳ 启动中...';
+
+    const formData = new FormData();
+    formData.append('mode', state.mode);
+    formData.append('resume_path', state.resumePath);
+    formData.append('keyword', document.getElementById('keyword').value);
+    formData.append('location', document.getElementById('location').value);
+    formData.append('min_salary', document.getElementById('minSalary').value || '0');
+    formData.append('industry', document.getElementById('industry').value);
+    formData.append('source', document.getElementById('source').value);
+    formData.append('format', document.getElementById('format').value);
+    formData.append('max_jobs', document.getElementById('maxJobs').value || '10');
+
+    try {
+        const res = await fetch('/api/run', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        state.taskId = data.task_id;
+        state.startedAt = 0;
+        state.lastActivity = 0;
+        state.currentStep = 0;
+        state.maxSteps = 0;
+        state.lastLogCount = 0;
+        state.renderedChatCount = 0;
+
+        // 显示进度
+        document.getElementById('progressCard').classList.add('visible');
+        document.getElementById('resultCard').classList.remove('visible');
+        document.getElementById('logViewer').innerHTML = '';
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('progressBar').classList.add('running');
+        document.getElementById('progressBar').style.background = '';
+        document.getElementById('statusPanel').style.display = 'none';
+        document.getElementById('stallWarning').classList.remove('visible');
+
+        startPolling();
+    } catch (err) {
+        alert('启动失败: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        document.getElementById('runBtnText').textContent = '▶ 开始优化';
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Start Focus Task
+   ═══════════════════════════════════════════════════════ */
+async function startFocusTask() {
+    if (!state.resumePath) return;
+
+    const urlsText = document.getElementById('focusUrls').value.trim();
+    if (!urlsText) {
+        alert('请输入至少一个职位页面 URL');
+        return;
+    }
+
+    // 将换行和逗号统一转为逗号分隔
+    const urls = urlsText.replace(/[\n\r]+/g, ',').replace(/,\s*,/g, ',').trim();
+    const subMode = document.getElementById('focusSubMode').value;
+    const fmt = document.getElementById('focusFormat').value;
+
+    const btn = document.getElementById('focusRunBtn');
+    btn.disabled = true;
+    document.getElementById('focusRunBtnText').textContent = '⏳ 启动中...';
+
+    const formData = new FormData();
+    formData.append('resume_path', state.resumePath);
+    formData.append('format', fmt);
+    formData.append('urls', urls);
+
+    if (subMode === 'focus') {
+        // 单次执行：直接走 Focus pipeline
+        formData.append('mode', 'focus');
+    } else {
+        // 交互式：走 interactive 模式，URL 信息通过 chat 传入
+        formData.append('mode', 'interactive');
+    }
+
+    try {
+        const res = await fetch('/api/run', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        state.taskId = data.task_id;
+        state.startedAt = 0;
+        state.lastActivity = 0;
+        state.currentStep = 0;
+        state.maxSteps = 0;
+        state.lastLogCount = 0;
+
+        document.getElementById('resultCard').classList.remove('visible');
+
+        if (subMode === 'focus') {
+            // 单次执行：显示进度栏 + 日志
+            document.getElementById('progressCard').classList.add('visible');
+            document.getElementById('logViewer').innerHTML = '';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressBar').classList.add('running');
+            document.getElementById('progressBar').style.background = '';
+            document.getElementById('statusPanel').style.display = 'none';
+            document.getElementById('stallWarning').classList.remove('visible');
+            startPolling();
+        } else {
+            // 交互式：只显示聊天界面（与纯交互式 Agent 模式一致，不显示进度栏）
+            state.chatTaskId = data.task_id;
+            document.getElementById('progressCard').classList.remove('visible');
+            document.getElementById('chatCard').classList.add('visible');
+            startPolling();
+            // 自动发送第一条消息（包含 URL 信息）
+            const urlCount = urls.split(',').filter(u => u.trim()).length;
+            const autoMsg = `请帮我根据以下 ${urlCount} 个职位 URL 优化简历：\n${urlsText}\n\n请先抓取这些职位的信息，然后分析匹配度并优化简历。`;
+            setTimeout(() => {
+                document.getElementById('chatInput').value = autoMsg;
+                sendChat();
+            }, 500);
+        }
+    } catch (err) {
+        alert('启动失败: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        document.getElementById('focusRunBtnText').textContent = '▶ 开始优化';
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Polling
+   ═══════════════════════════════════════════════════════ */
+function startPolling() {
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    if (state.elapsedTimer) clearInterval(state.elapsedTimer);
+
+    // 初始化计时器（每秒更新一次已运行时间）
+    state.elapsedTimer = setInterval(updateElapsedDisplay, 1000);
+
+    // 500ms 轮询间隔
+    state.pollTimer = setInterval(pollStatus, 500);
+    pollStatus();
+}
+
+function stopPolling() {
+    if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+    if (state.elapsedTimer) { clearInterval(state.elapsedTimer); state.elapsedTimer = null; }
+}
+
+async function pollStatus() {
+    if (!state.taskId) return;
+
+    try {
+        const res = await fetch(`/api/status/${state.taskId}`);
+        const data = await res.json();
+
+        updateStatusBadge(data.status);
+        updateLogs(data.logs || []);
+
+        // 增量渲染 chat_history 中的 step 消息（交互式 Agent 思考步骤）
+        const chatHistory = data.chat_history || [];
+        while (state.renderedChatCount < chatHistory.length) {
+            const entry = chatHistory[state.renderedChatCount];
+            if (entry.role === 'step') {
+                addStepMsg(entry.content);
+            }
+            state.renderedChatCount++;
+        }
+
+        // 更新步骤信息
+        const si = data.step_info || {};
+        if (si.started_at) state.startedAt = si.started_at;
+        if (si.last_activity) state.lastActivity = si.last_activity;
+        if (si.current_step !== undefined) state.currentStep = si.current_step;
+        if (si.max_steps !== undefined) state.maxSteps = si.max_steps;
+
+        // 显示状态面板
+        document.getElementById('statusPanel').style.display = '';
+        updateStepDisplay(si);
+        updateElapsedDisplay();
+        updateStallWarning();
+
+        if (data.status === 'completed') {
+            stopPolling();
+            document.getElementById('progressBar').classList.remove('running');
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('phaseText').textContent = '已完成';
+            document.getElementById('stallWarning').classList.remove('visible');
+            showResults(data.result);
+        } else if (data.status === 'failed') {
+            stopPolling();
+            document.getElementById('progressBar').classList.remove('running');
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressBar').style.background = 'var(--danger)';
+            document.getElementById('phaseText').textContent = '执行失败';
+            document.getElementById('stallWarning').classList.remove('visible');
+        } else if (data.status === 'running') {
+            const logCount = (data.logs || []).length;
+            const pct = state.maxSteps > 0
+                ? Math.min((state.currentStep / state.maxSteps) * 90 + 5, 90)
+                : Math.min(10 + logCount * 4, 90);
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+    } catch (err) {
+        console.error('Poll error:', err);
+    }
+}
+
+function updateStepDisplay(si) {
+    const phase = si.phase || '';
+    const toolName = si.tool_name || '';
+    const toolArgs = si.tool_args || {};
+    const currentStep = si.current_step || 0;
+    const maxSteps = si.max_steps || 0;
+    const stepMode = si.step_mode || 'fixed';  // "fixed" = 固定步数, "dynamic" = 动态步数
+
+    // 更新阶段文本
+    document.getElementById('phaseText').textContent = phase || '-';
+
+    // 更新步骤圆点
+    const stepProgress = document.getElementById('stepProgress');
+    const stepDots = document.getElementById('stepDots');
+    const stepText = document.getElementById('stepText');
+
+    if (currentStep > 0 || maxSteps > 0) {
+        stepProgress.style.display = '';
+
+        if (stepMode === 'dynamic') {
+            // Agent 模式：步数不固定，只显示当前步数，不显示上限
+            stepText.textContent = `第 ${currentStep} 步`;
+            // 圆点动态增长：显示已完成的步数 + 当前活跃点
+            const dotCount = Math.max(currentStep, 1);
+            let dotsHtml = '';
+            for (let i = 1; i <= dotCount; i++) {
+                let cls = 'step-dot';
+                if (i < currentStep) cls += ' done';
+                else if (i === currentStep) cls += ' active';
+                dotsHtml += `<div class="${cls}"></div>`;
+            }
+            stepDots.innerHTML = dotsHtml;
+        } else {
+            // Pipeline/Focus 模式：固定步数，显示 X / N
+            stepText.textContent = `第 ${currentStep} / ${maxSteps} 步`;
+            const dotCount = Math.min(maxSteps, 15);
+            let dotsHtml = '';
+            for (let i = 1; i <= dotCount; i++) {
+                let cls = 'step-dot';
+                if (i < currentStep) cls += ' done';
+                else if (i === currentStep) cls += ' active';
+                dotsHtml += `<div class="${cls}"></div>`;
+            }
+            stepDots.innerHTML = dotsHtml;
+        }
+    } else {
+        stepProgress.style.display = 'none';
+    }
+
+    // 更新阶段描述（显示工具名和参数）
+    const phaseDesc = document.getElementById('phaseDesc');
+    if (toolName) {
+        let argsStr = Object.entries(toolArgs).map(([k, v]) => {
+            const val = typeof v === 'string' && v.length > 30 ? v.slice(0, 30) + '...' : v;
+            return `${k}: ${JSON.stringify(val)}`;
+        }).join(', ');
+        phaseDesc.style.display = '';
+        phaseDesc.innerHTML = `正在调用工具 <span class="tool-tag">${esc(toolName)}</span>` +
+            (argsStr ? ` &mdash; ${esc(argsStr)}` : '');
+    } else {
+        phaseDesc.style.display = 'none';
+    }
+}
+
+function updateElapsedDisplay() {
+    if (!state.startedAt) return;
+    const now = Date.now() / 1000;
+    const elapsed = Math.floor(now - state.startedAt);
+
+    let text;
+    if (elapsed < 60) text = `${elapsed}s`;
+    else if (elapsed < 3600) text = `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
+    else text = `${Math.floor(elapsed / 3600)}h ${Math.floor((elapsed % 3600) / 60)}m`;
+
+    document.getElementById('elapsedTime').textContent = text;
+
+    // 最后活动时间
+    if (state.lastActivity) {
+        const ago = Math.floor(now - state.lastActivity);
+        let agoText;
+        if (ago < 5) agoText = '刚刚';
+        else if (ago < 60) agoText = `${ago}s 前`;
+        else agoText = `${Math.floor(ago / 60)}m ${ago % 60}s 前`;
+        document.getElementById('lastActivityTime').textContent = agoText;
+
+        // 颜色指示
+        const el = document.getElementById('lastActivityTime');
+        el.className = 'value';
+        if (ago > 60) el.classList.add('danger');
+        else if (ago > 30) el.classList.add('warning');
+    }
+}
+
+function updateStallWarning() {
+    const warning = document.getElementById('stallWarning');
+    if (!state.lastActivity) { warning.classList.remove('visible'); return; }
+
+    const ago = Math.floor(Date.now() / 1000 - state.lastActivity);
+    if (ago > 30) {
+        warning.classList.add('visible');
+        document.getElementById('stallText').textContent =
+            `超过 ${ago} 秒无新活动，可能正在处理耗时操作（如模型加载、LLM 推理、网页抓取）...`;
+    } else {
+        warning.classList.remove('visible');
+    }
+}
+
+function updateStatusBadge(status) {
+    const badge = document.getElementById('statusBadge');
+    const map = {
+        pending:   ['等待中', 'pending'],
+        running:   ['运行中', 'running'],
+        completed: ['已完成', 'completed'],
+        failed:    ['已失败', 'failed'],
+    };
+    const [text, cls] = map[status] || ['未知', 'pending'];
+    badge.textContent = text;
+    badge.className = 'status-badge ' + cls;
+}
+
+function updateLogs(logs) {
+    const viewer = document.getElementById('logViewer');
+    viewer.innerHTML = logs.map(l => {
+        let cls = 'info';
+        if (/\[Tool\]/.test(l)) cls = 'tool-call';
+        else if (/\[Agent\] 调用工具/.test(l)) cls = 'tool-call';
+        else if (/\[Agent\] 工具结果/.test(l)) cls = 'tool-result';
+        else if (/完成|成功|✓/.test(l)) cls = 'success';
+        else if (/警告|warn/i.test(l)) cls = 'warning';
+        else if (/错误|失败|error|fail/i.test(l)) cls = 'error';
+        return `<div class="log-line ${cls}">${esc(l)}</div>`;
+    }).join('');
+    viewer.scrollTop = viewer.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Results
+   ═══════════════════════════════════════════════════════ */
+function showResults(result) {
+    if (!result || Object.keys(result).length === 0) return;
+
+    const section = document.getElementById('resultCard');
+    const filesDiv = document.getElementById('resultFiles');
+    const summaryCard = document.getElementById('summaryCard');
+    filesDiv.innerHTML = '';
+
+    // Pipeline 模式结果
+    if (result.output_resume) {
+        filesDiv.appendChild(makeFileItem(result.output_resume));
+    }
+    if (result.output_report) {
+        filesDiv.appendChild(makeFileItem(result.output_report));
+    }
+
+    // Agent 模式结果
+    if (result.output_files && result.output_files.length > 0) {
+        // 去重：如果 output_report 已展示，跳过 output_files 中同名文件
+        const reportBase = result.output_report ? result.output_report.split('/').pop() : '';
+        result.output_files.forEach(f => {
+            const fname = f.split('/').pop();
+            if (fname !== reportBase) {
+                filesDiv.appendChild(makeFileItem(f));
+            }
+        });
+    }
+    if (result.agent_response) {
+        const div = document.createElement('div');
+        div.className = 'summary-card fade-in';
+        div.innerHTML = `<div class="summary-title">Agent 回复</div>
+            <div style="font-size:13px;color:var(--gray-700);white-space:pre-wrap;line-height:1.7;max-height:300px;overflow-y:auto">${esc(result.agent_response)}</div>`;
+        section.appendChild(div);
+    }
+
+    // 匹配摘要
+    if (result.summary) {
+        const s = result.summary;
+        summaryCard.style.display = 'block';
+        let html = `<div class="summary-grid">
+            <div class="summary-item"><span class="summary-label">综合匹配：</span><span class="summary-value">${esc(s.overall_score || '')}</span></div>
+            <div class="summary-item"><span class="summary-label">技能匹配：</span><span class="summary-value">${esc(s.skill_score || '')}</span></div>
+        </div>`;
+        if (s.matched_skills && s.matched_skills.length) {
+            html += `<div class="skill-tags">${s.matched_skills.map(sk =>
+                `<span class="skill-tag matched">${esc(sk)}</span>`).join('')}</div>`;
+        }
+        if (s.missing_skills && s.missing_skills.length) {
+            html += `<div class="skill-tags" style="margin-top:6px">${s.missing_skills.map(sk =>
+                `<span class="skill-tag missing">${esc(sk)}</span>`).join('')}</div>`;
+        }
+        document.getElementById('summaryContent').innerHTML = html;
+    } else {
+        summaryCard.style.display = 'none';
+    }
+
+    section.classList.add('visible');
+}
+
+function makeFileItem(filePath) {
+    const filename = filePath.split('/').pop();
+    const div = document.createElement('div');
+    div.className = 'result-file fade-in';
+    div.innerHTML = `<span class="result-file-name">📄 ${esc(filename)}</span>
+        <a href="/api/download/${encodeURIComponent(filename)}" class="btn btn-outline">下载</a>`;
+    return div;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Chat (Interactive Mode)
+   ═══════════════════════════════════════════════════════ */
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    // 首次发消息时创建 interactive 任务
+    if (!state.chatTaskId) {
+        const formData = new FormData();
+        formData.append('mode', 'interactive');
+        formData.append('resume_path', state.resumePath || 'interactive');
+        try {
+            const res = await fetch('/api/run', { method: 'POST', body: formData });
+            const data = await res.json();
+            state.chatTaskId = data.task_id;
+        } catch (err) {
+            addChatMsg('assistant', '创建会话失败: ' + err.message);
+            return;
+        }
+    }
+
+    input.value = '';
+    addChatMsg('user', msg);
+
+    // 同步 taskId 以启动轮询（轮询用 taskId 拉取 step 消息）
+    state.taskId = state.chatTaskId;
+    if (!state.pollTimer) startPolling();
+
+    const sendBtn = document.getElementById('chatSendBtn');
+    sendBtn.disabled = true;
+    sendBtn.textContent = '思考中...';
+
+    // 添加一个临时的 "正在输入" 指示器
+    const typingId = addTypingIndicator();
+
+    try {
+        const formData = new FormData();
+        formData.append('message', msg);
+        const res = await fetch(`/api/chat/${state.chatTaskId}`, { method: 'POST', body: formData });
+        const data = await res.json();
+
+        removeTypingIndicator(typingId);
+        addChatMsg('assistant', data.response || '(无回复)');
+
+        // 交互式模式：如果 Agent 生成了文件，直接展示下载链接
+        if (data.output_files && data.output_files.length > 0) {
+            showResults({ output_files: data.output_files, output_report: data.output_report || '' });
+        }
+    } catch (err) {
+        removeTypingIndicator(typingId);
+        addChatMsg('assistant', '请求失败: ' + err.message);
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送';
+    }
+}
+
+function addChatMsg(role, text) {
+    const container = document.getElementById('chatMessages');
+    // 清除占位文字
+    if (container.querySelector('div[style]')) {
+        const placeholder = container.querySelector('div[style]');
+        if (placeholder.textContent.includes('上传简历')) placeholder.remove();
+    }
+
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role} fade-in`;
+    const avatar = role === 'user' ? '你' : 'AI';
+    div.innerHTML = `<div class="chat-avatar">${avatar}</div>
+        <div class="chat-bubble">${esc(text)}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function addStepMsg(text) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg step fade-in';
+    div.innerHTML = `<div class="step-bubble">${esc(text)}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function addTypingIndicator() {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    const id = 'typing-' + Date.now();
+    div.id = id;
+    div.className = 'chat-msg assistant';
+    div.innerHTML = `<div class="chat-avatar">AI</div>
+        <div class="chat-bubble" style="color:var(--gray-400)">思考中...</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return id;
+}
+
+function removeTypingIndicator(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+/* ═══════════════════════════════════════════════════════
+   Utilities
+   ═══════════════════════════════════════════════════════ */
+function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+</script>
+</body>
+</html>

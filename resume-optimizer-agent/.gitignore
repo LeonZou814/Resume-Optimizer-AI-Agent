@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+env/
+ENV/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 数据文件
+data/resumes/*
+data/jobs/*
+data/output/*
+data/chroma_db/
+data/*.db
+!data/resumes/.gitkeep
+!data/jobs/.gitkeep
+!data/output/.gitkeep
+!data/templates/.gitkeep
+
+# 日志
+*.log
+logs/
+
+# Playwright
+playwright-report/
+test-results/
+
+# macOS
+.DS_Store

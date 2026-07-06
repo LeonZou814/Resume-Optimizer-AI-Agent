@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  # 主应用服务
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: resume-optimizer
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    environment:
+      - ENVIRONMENT=production
+    depends_on:
+      - redis
+      - chromadb
+    restart: unless-stopped
+
+  # Redis 缓存 & 消息队列
+  redis:
+    image: redis:7-alpine
+    container_name: resume-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # ChromaDB 向量数据库
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: resume-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+    restart: unless-stopped
+
+  # Celery Worker（异步任务）
+  celery:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: resume-celery
+    command: celery -A src.tasks worker --loglevel=info
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  chroma_data:
