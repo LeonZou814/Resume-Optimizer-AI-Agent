@@ -1,51 +1,55 @@
-# Resume Optimizer AI Agent
+# Resume Optimizer Agent
 
-基于招聘需求检索的简历智能优化系统。通过抓取真实职位信息，利用语义匹配和大语言模型对简历进行针对性优化，支持 Pipeline 流水线、Agent 自主决策、交互式对话、Focus 定向优化四种运行模式，并提供 Web 可视化界面。
+基于 LLM + ReAct Agent 架构的智能简历优化系统。通过语义匹配引擎 + LLM-as-Judge 评估 + 反幻觉三层防御，从智联招聘真实职位驱动简历定向优化，支持 Pipeline / Agent / Interactive / Focus 四种运行模式。
 
-## 功能特性
+## 核心特性
 
-- **四种运行模式**：Pipeline（固定流水线）、Agent（AI 自主规划执行）、Interactive（多轮对话逐步优化）、Focus（根据指定 URL 定向优化）
-- **智能职位检索**：自动从智联招聘抓取目标职位，支持分页抓取、薪资/行业二次过滤、详情页补充
-- **语义匹配分析**：基于 SentenceTransformer 多语言模型计算简历与职位的语义相似度，结合技能关键词匹配和经验规则，加权综合评分
-- **LLM 驱动优化**：分模块优化简历内容（专业技能、工作经历、项目经验、自我评价），严格遵循"只润色不编造"原则
-- **反幻觉机制**：三层防御（Prompt 约束 + 后置校验 + 输出清洗），防止 LLM 编造数字、技术词和时间线
-- **Agent 记忆系统**：短期对话记忆 + 长期用户偏好持久化，支持跨会话保持上下文
-- **Web 可视化界面**：实时进度追踪（步骤指示器、阶段描述、耗时统计、停滞警告）、日志查看器、结果下载
-- **多格式支持**：输入支持 PDF/DOCX/TXT，输出支持 DOCX（专业排版）和 Markdown
-- **多数据源**：智联招聘（默认）、Boss 直聘、任意 URL 抓取
+- **ReAct Agent 架构** — 手写 ReAct 循环，LLM 自主决定工具调用顺序和参数，支持动态策略调整
+- **反幻觉三层防御** — Prompt 约束 + 后置校验（长度/数字/技术词三重检查）+ 输出清洗（30+ 正则模式），确保不编造任何经历
+- **语义匹配引擎** — SentenceTransformer 多语言模型，技能匹配(50%) + 语义相似度(30%) + 经验匹配(20%) 三维加权评分
+- **LLM-as-Judge 评估** — 6 维度对比评分 + 闭环反馈（薄弱维度自动重优化），量化优化效果
+- **多职位合并优化** — 自动综合多个高匹配职位需求，LLM 智能合并后定向优化
+- **四种运行模式** — Pipeline（一键执行）、Agent（AI 自主决策）、Interactive（多轮对话）、Focus（URL 定向）
+- **Web 可视化界面** — 实时步骤追踪、工具调用监控、终端风格日志、文件上传下载
+- **共享状态同步** — 声明式字段权限表 + 发布-订阅模式，工具间数据自动流转
 
 ## 系统架构
 
 ```
-用户简历 (PDF/DOCX/TXT)
-        │
-        ▼
-┌─────────────────┐
-│   简历解析器     │  提取模块内容、联系方式
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   职位检索       │  智联招聘 / Boss直聘 / 自定义URL
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   语义匹配分析   │  SentenceTransformer + 技能匹配 + 经验规则
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   LLM 简历优化   │  分模块优化 + 反幻觉校验
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│   文件生成       │  DOCX（专业排版）/ Markdown + 优化报告
-└─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    Web 前端 (index.html)                         │
+│    纯原生 HTML/CSS/JS · 4 Tab · 500ms 轮询 · 实时追踪           │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ HTTP (FastAPI)
+┌────────────────────────────▼────────────────────────────────────┐
+│                    Web 后端 (web/app.py)                         │
+│    FastAPI · 内存任务管理 · 后台线程 · loguru 日志隔离            │
+│                                                                  │
+│    ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌───────────────┐   │
+│    │ Pipeline │ │  Agent   │ │ Interactive│ │    Focus      │   │
+│    └────┬─────┘ └────┬─────┘ └─────┬──────┘ └──────┬────────┘   │
+└─────────┼────────────┼─────────────┼───────────────┼────────────┘
+          │            │             │               │
+          │   ┌────────▼─────────────▼───────────────▼──────┐
+          │   │          ResumeAgent (ReAct 核心)            │
+          │   │  手写循环 · 文本解析工具调用 · 共享状态同步    │
+          │   └────────────────────┬────────────────────────┘
+          │                        │
+     ┌────▼────────────────────────▼──────────────────────────┐
+     │                    工具层 (tools.py)                     │
+     │  ParseResume · SearchJobs · FetchURLJobs · MatchAllJobs │
+     │  OptimizeSection · EvaluateResume · JudgeResume         │
+     │  GenerateResume                                         │
+     └──────┬──────────┬──────────┬──────────┬────────────────┘
+            │          │          │          │
+     ┌──────▼───┐ ┌───▼────┐ ┌──▼───────┐ ┌▼──────────────┐
+     │ 简历解析 │ │职位抓取│ │匹配引擎  │ │ 优化 + 评估   │
+     │ parser   │ │scraper │ │matcher   │ │ optimizer     │
+     │          │ │        │ │          │ │ evaluator     │
+     │pdfplumber│ │Playwright│ │Sentence │ │ LLM (Qwen)   │
+     │python-docx│ │BS4     │ │Transformer│ │ LCEL chain   │
+     └──────────┘ └────────┘ └──────────┘ └───────────────┘
 ```
-
-Agent 模式下，上述流程由 AI Agent 通过 ReAct 循环自主规划执行顺序，可动态调整策略、迭代优化。
 
 ## 快速开始
 
@@ -74,8 +78,6 @@ playwright install chromium
 
 ### 配置
 
-复制环境变量模板并填写 API Key：
-
 ```bash
 cp .env.example .env
 ```
@@ -99,7 +101,9 @@ QWEN_MODEL=qwen-plus
 **Web 界面（推荐）**
 
 ```bash
-python -m web.app
+# macOS 需要清除可能冲突的环境变量
+env -u PYTHONHOME -u PYTHONPATH python -m web.app
+
 # 访问 http://localhost:8080
 ```
 
@@ -114,111 +118,171 @@ python -m src.main --agent --resume data/resumes/your_resume.pdf
 
 # 交互式 Agent（多轮对话）
 python -m src.main --interactive --resume data/resumes/your_resume.pdf
-
-# 带筛选条件
-python -m src.main --resume data/resumes/your_resume.pdf \
-    --keyword "产品经理" \
-    --location "上海" \
-    --min-salary 15000 \
-    --industry "互联网" \
-    --max-detail-jobs 5 \
-    --max-jobs 20 \
-    --format docx
 ```
 
-## 运行模式说明
+## 运行模式
 
-### Pipeline 模式
+| 模式 | 执行方式 | 工具决策 | 适用场景 |
+|------|---------|---------|---------|
+| **Pipeline** | 固定 5 步串行 | 代码硬编码 | 一键执行，无需交互 |
+| **Agent** | ReAct 循环，最多 15 步 | LLM 自主决策 | 灵活优化策略 |
+| **Interactive** | 多轮对话，每轮 ReAct | LLM 自主决策 | 逐步调整优化方向 |
+| **Focus** | 固定 7 步串行 | 代码硬编码 | 定向 URL 精准优化 |
 
-固定五步流水线：解析简历 → 搜索职位 → 匹配分析 → LLM 优化 → 生成文件。流程确定，适合批量处理。
+### Agent 工具列表
 
-### Agent 模式
+Agent 通过文本格式（`TOOL_CALL` + `ARGS`）调用以下 9 个工具：
 
-AI Agent 通过 ReAct 循环（思考 → 行动 → 观察 → 循环）自主规划执行。可调用 7 个工具：
+| 工具 | 功能 | 关键约束 |
+|------|------|---------|
+| `parse_resume` | 解析 PDF/DOCX/TXT 简历 | 必须第一步调用 |
+| `search_jobs` | 从智联招聘搜索职位 | 只允许调用一次 |
+| `fetch_url_jobs` | 从指定 URL 抓取职位详情 | 只允许调用一次，与 search_jobs 二选一 |
+| `match_all_jobs` | 全职位匹配排序 | 必须在 optimize 之前调用 |
+| `optimize_section` | 定向优化单个模块 | 支持多职位合并优化 |
+| `judge_resume` | LLM-as-Judge 6 维度评估 | 触发闭环反馈 |
+| `generate_resume` | 生成 DOCX/Markdown 文件 | 最后一步调用 |
 
-| 工具 | 功能 |
-|------|------|
-| `parse_resume` | 解析简历文件 |
-| `search_jobs` | 从智联招聘搜索职位 |
-| `fetch_url_jobs` | 从指定 URL 抓取职位 |
-| `match_resume` | 语义匹配分析 |
-| `optimize_section` | 优化单个模块 |
-| `evaluate_resume` | 评估简历质量 |
-| `generate_resume` | 生成优化后的文件 |
+### Agent 执行流程
 
-### Interactive 模式
+```
+parse_resume → search_jobs / fetch_url_jobs → match_all_jobs
+    → optimize_section (逐模块) → judge_resume
+    → [薄弱维度重优化 → judge_resume] (闭环反馈)
+    → generate_resume
+```
 
-多轮对话模式，与 Agent 持续交互，逐步优化简历。支持 `/status`、`/history`、`/reset`、`/quit` 等命令。
+## 核心设计
 
-### Focus 模式
+### 反幻觉三层防御
 
-用户提供目标职位页面的 URL，系统直接从指定 URL 抓取职位信息并优化简历，适合有明确目标岗位的场景。
+```
+第一层: Prompt 约束
+  └─ 系统提示词严格限制"只润色不编造"，含正确/错误示例对比
+
+第二层: 后置校验
+  ├─ 长度检查: 优化后 > 原文 1.5 倍 → 标记异常
+  ├─ 数字检查: 正则提取带单位数字，对比原文
+  └─ 技术词检查: 30+ 行业术语逐一检查 (LIMS, GMP, SAP...)
+
+第三层: 输出清洗
+  └─ 30+ 正则模式去除 LLM 元文本 ("重要提醒", "⚠️", "📌"...)
+```
+
+### 语义匹配引擎
+
+```
+综合分数 = 技能匹配 × 0.5 + 语义相似度 × 0.3 + 经验匹配 × 0.2
+
+技能匹配 (50%):  100+ 技术关键词库 + 字符串包含匹配
+语义相似度 (30%): SentenceTransformer 余弦相似度，专业技能加权 2x
+经验匹配 (20%):  规则匹配 ("项目", "工作", "实习" 关键词)
+```
+
+### 共享状态同步
+
+工具间通过声明式字段权限表实现数据自动流转：
+
+```python
+_TOOL_FIELDS = {
+    "parse_resume":     {"resume_data"},
+    "search_jobs":      {"jobs"},
+    "match_all_jobs":   {"resume_data", "jobs", "match_result", "top_jobs"},
+    "optimize_section": {"resume_data", "jobs", "match_result", "optimized_sections", "top_jobs"},
+    "judge_resume":     {"resume_data", "jobs", "match_result", "optimized_sections", "top_jobs"},
+    "generate_resume":  {"resume_data", "optimized_sections"},
+}
+```
+
+每次工具执行后，`_sync_shared_state()` 自动收集最新状态并按权限分发给所有声明了对应字段的工具。
+
+### 记忆系统
+
+- **短期记忆**（内存）：对话历史 + 工具调用结果，支持最近 N 轮上下文注入
+- **长期记忆**（JSON 持久化）：用户偏好（目标行业/岗位/关键词）+ 历史优化记录（最近 20 条）
 
 ## 项目结构
 
 ```
 resume-optimizer-agent/
 ├── config/
-│   └── config.py                # 全局配置（pydantic-settings）
+│   └── config.py                # pydantic-settings 全局配置
 ├── src/
-│   ├── main.py                  # CLI 入口 + Pipeline 流水线
+│   ├── main.py                  # CLI 入口 + Pipeline 编排
 │   ├── agents/
-│   │   ├── resume_agent.py      # Agent 核心（ReAct 循环）
-│   │   ├── tools.py             # Agent 工具层（7 个 LangChain Tools）
-│   │   ├── matcher.py           # 语义匹配（SentenceTransformer）
-│   │   ├── optimizer.py         # LLM 简历优化 + 反幻觉校验
-│   │   ├── memory.py            # 记忆系统（短期 + 长期）
-│   │   └── interactive.py       # 命令行交互式 Agent
+│   │   ├── resume_agent.py      # ReAct Agent 核心（手写循环）
+│   │   ├── tools.py             # 9 个 LangChain BaseTool 定义
+│   │   ├── matcher.py           # 语义匹配引擎（SentenceTransformer）
+│   │   ├── optimizer.py         # LLM 简历优化器（含反幻觉校验）
+│   │   ├── evaluator.py         # LLM-as-Judge 评估器
+│   │   ├── memory.py            # 短期 + 长期记忆系统
+│   │   └── interactive.py       # 交互式 Agent 封装
 │   ├── parsers/
-│   │   └── resume_parser.py     # 简历解析（PDF/DOCX/TXT）
+│   │   └── resume_parser.py     # 多格式简历解析器
 │   ├── scrapers/
 │   │   └── job_scraper.py       # 职位抓取（智联/Boss/URL）
 │   ├── generators/
-│   │   └── resume_generator.py  # 简历生成（DOCX/Markdown）
+│   │   └── resume_generator.py  # DOCX/Markdown 简历生成
 │   └── utils/
-│       └── text_utils.py        # 文本处理工具
+│       └── text_utils.py        # 文本清洗工具
 ├── web/
-│   ├── app.py                   # FastAPI Web 后端
+│   ├── app.py                   # FastAPI 后端（7 个 API 端点）
 │   └── templates/
-│       └── index.html           # 前端单页面
+│       └── index.html           # 前端单文件（4 Tab + 实时追踪）
 ├── data/
-│   ├── resumes/                 # 输入简历
-│   ├── output/                  # 优化输出
-│   └── memory/                  # Agent 记忆持久化
-├── docker/
-│   └── Dockerfile
-├── docker-compose.yml
+│   ├── resumes/                 # 用户上传的简历
+│   ├── output/                  # 优化输出文件
+│   ├── jobs/                    # 职位数据缓存
+│   └── memory/                  # 用户偏好 JSON 持久化
+├── tests/
+├── .env.example
 ├── requirements.txt
-└── .env.example
+└── docker/
 ```
 
 ## 技术栈
 
 | 类别 | 技术 |
 |------|------|
-| LLM / Agent | LangChain, 通义千问 (Qwen) / OpenAI |
+| LLM / Agent | LangChain + 通义千问 (Qwen) / OpenAI |
+| Agent 架构 | 手写 ReAct 循环，文本解析工具调用 |
 | 语义匹配 | SentenceTransformer (paraphrase-multilingual-MiniLM-L12-v2) |
-| 数据抓取 | Playwright (Chromium) |
-| 简历解析 | pdfplumber, python-docx |
-| 文件生成 | python-docx (DOCX), Markdown |
-| Web 框架 | FastAPI, Uvicorn |
-| 配置管理 | pydantic-settings |
-| 中文分词 | jieba |
+| 数据抓取 | Playwright (Chromium) + BeautifulSoup4 |
+| 简历解析 | pdfplumber (PDF) + python-docx (DOCX) |
+| 简历生成 | python-docx (A4 排版 + 专业配色) |
+| Web 框架 | FastAPI + Uvicorn |
+| 前端 | 纯原生 HTML/CSS/JS（零框架依赖） |
+| 日志 | loguru (自定义 sink + threading.local 线程隔离) |
+| 配置 | pydantic-settings |
 
-## Docker 部署
+## API 端点
 
-```bash
-docker-compose up -d
-```
+| 方法 | 路径 | 功能 |
+|------|------|------|
+| GET | `/` | 前端页面 |
+| POST | `/api/upload` | 上传简历文件 |
+| POST | `/api/run` | 启动优化任务 |
+| GET | `/api/status/{task_id}` | 查询任务状态（500ms 轮询） |
+| GET | `/api/download/{filename}` | 下载输出文件 |
+| POST | `/api/chat/{task_id}` | 交互式 Agent 对话 |
 
-包含 4 个服务：应用主程序、Redis（缓存 + 消息队列）、ChromaDB（向量数据库）、Celery（异步任务 Worker）。
+## 性能参考
+
+| 操作 | 耗时 |
+|------|------|
+| Qwen API 单次调用 | ~10.8 秒 |
+| Agent 完整流程 | 2-3 分钟 |
+| 智联招聘抓取 | ~50 秒 |
+| SentenceTransformer 加载 | ~1.5 秒（离线模式） |
+| 定向优化 + 缓存 | 节省 ~66% LLM 调用 |
 
 ## 注意事项
 
-- 语义匹配模型首次运行时会从 HuggingFace 镜像站下载（约 458MB），后续使用本地缓存
-- 智联招聘抓取频率已做限速处理（默认 2 秒间隔），请勿调低以避免触发反爬
-- LLM 优化遵循"只润色不编造"原则，不会凭空添加原文中不存在的技能、数字或经历
-- Agent 模式的最大执行步数默认为 15 步，可在代码中调整
+- 语义匹配模型首次运行需从 HuggingFace 镜像站下载（~458MB），后续使用本地缓存。国内环境已配置 `HF_ENDPOINT=https://hf-mirror.com`
+- 模型强制离线加载（`TRANSFORMERS_OFFLINE=1`），在 `web/app.py` 最顶部设置，早于所有 import
+- 智联招聘抓取已做限速处理（默认 2 秒间隔），请勿调低以避免触发反爬
+- Boss 直聘反爬机制严格，默认使用智联招聘
+- macOS 启动 uvicorn 时需使用 `env -u PYTHONHOME -u PYTHONPATH` 避免环境冲突
 
 ## License
 
